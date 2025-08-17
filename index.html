@@ -49,23 +49,19 @@
     </div>
 
     <script>
-        const spells = [
-            "Fireball",
-            "Magic Missile",
-            "Lightning Bolt",
-            "Heal",
-            "Shield",
-            "Teleport",
-            "Invisibility",
-            "Mage Hand",
-            "Sleep",
-            "Counterspell",
-            "Polymorph",
-            "Dimension Door",
-            "Web",
-            "Fly",
-            "Ice Storm"
-        ];
+        let spells = [];
+
+        async function loadSpells() {
+            try {
+                const response = await fetch('spells.txt');
+                const text = await response.text();
+                spells = text.split('\n').filter(spell => spell.trim() !== '');
+                displaySpell();
+            } catch (error) {
+                console.error('Error loading spells:', error);
+                document.getElementById('spellName').textContent = 'Error loading spells';
+            }
+        }
 
         function getRandomSpell() {
             const randomIndex = Math.floor(Math.random() * spells.length);
@@ -73,12 +69,14 @@
         }
 
         function displaySpell() {
-            const spell = getRandomSpell();
-            document.getElementById('spellName').textContent = spell;
+            if (spells.length > 0) {
+                const spell = getRandomSpell();
+                document.getElementById('spellName').textContent = spell;
+            }
         }
 
-        // Display a random spell when the page loads
-        window.addEventListener('load', displaySpell);
+        // Load spells and display a random one when the page loads
+        window.addEventListener('load', loadSpells);
     </script>
 </body>
 </html>
