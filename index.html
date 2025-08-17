@@ -26,6 +26,9 @@
             box-shadow: 0 0 30px rgba(16, 213, 194, 0.3);
             max-width: 600px;
             margin: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         
         .spell-name {
@@ -34,29 +37,78 @@
             margin-bottom: 20px;
             color: #10d5c2;
             text-shadow: 0 0 10px rgba(16, 213, 194, 0.5);
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        .spell-name:hover {
+            color: #0fb3a3;
+            text-shadow: 0 0 15px rgba(16, 213, 194, 0.8);
         }
         
         .spell-description {
             font-size: 1.2em;
             line-height: 1.6;
             color: #ccc;
+            text-align: center;
         }
     </style>
 </head>
 <body>
     <div class="spell-container">
-        <div class="spell-name" id="spellName">Loading...</div>
+        <a class="spell-name" id="spellName" href="#" target="_blank">Loading...</a>
+    </div>
+    
+    <div id="adjustmentControls" style="position: fixed; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px;">
+        <button onclick="adjustVertical(-adjustmentAmount)" style="padding: 10px; background: #10d5c2; border: none; border-radius: 5px; color: #1a1a2e; font-weight: bold; cursor: pointer;">UP</button>
+        <button onclick="adjustVertical(adjustmentAmount)" style="padding: 10px; background: #10d5c2; border: none; border-radius: 5px; color: #1a1a2e; font-weight: bold; cursor: pointer;">DOWN</button>
+        <div style="background: rgba(16, 213, 194, 0.2); padding: 5px; border-radius: 3px; font-size: 12px; text-align: center;" id="offsetDisplay">0px</div>
     </div>
 
     <script>
         let spells = [];
+        let verticalOffset = 0;
+        
+        // Configuration variables
+        const showButtons = true; // Set to false to hide buttons
+        const adjustmentAmount = 5; // Change this to adjust by different amounts
+        const defaultOffset = 0; // Starting vertical offset in pixels
+        const fallbackSpells = [
+            "Fireball",
+            "Lightning Bolt",
+            "Healing Word",
+            "Magic Missile",
+            "Shield",
+            "Cure Wounds"
+        ]; // Backup spells if spells.txt is not found
+
+        function adjustVertical(amount) {
+            verticalOffset += amount;
+            const spellName = document.getElementById('spellName');
+            spellName.style.transform = `translateY(${verticalOffset}px)`;
+            document.getElementById('offsetDisplay').textContent = `${verticalOffset}px`;
+        }
 
         async function loadSpells() {
             try {
+                // Check if spells.txt exists by trying to fetch it
                 const response = await fetch('spells.txt');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const text = await response.text();
-                spells = text.split('\n').filter(spell => spell.trim() !== '');
+                const loadedSpells = text.split('\n').filter(spell => spell.trim() !== '');
+                
+                if (loadedSpells.length === 0) {
+                    throw new Error('spells.txt is empty');
+                }
+                
+                spells = loadedSpells;
+                console.log('Successfully loaded spells from spells.txt');
                 displaySpell();
+                
             } catch (error) {
                 console.error('Error loading spells:', error);
                 document.getElementById('spellName').textContent = 'Error loading spells';
@@ -71,12 +123,31 @@
         function displaySpell() {
             if (spells.length > 0) {
                 const spell = getRandomSpell();
-                document.getElementById('spellName').textContent = spell;
+                const spellElement = document.getElementById('spellName');
+                spellElement.textContent = spell;
+                
+                // Create the URL by converting spell name to lowercase and replacing spaces with hyphens
+                const spellUrl = spell.toLowerCase().replace(/\s+/g, '-');
+                spellElement.href = `https://dnd5e.wikidot.com/spell:${spellUrl}`;
             }
         }
 
         // Load spells and display a random one when the page loads
-        window.addEventListener('load', loadSpells);
+        window.addEventListener('load', function() {
+            loadSpells();
+            
+            // Apply default offset
+            verticalOffset = defaultOffset;
+            const spellName = document.getElementById('spellName');
+            spellName.style.transform = `translateY(${verticalOffset}px)`;
+            document.getElementById('offsetDisplay').textContent = `${verticalOffset}px`;
+            
+            // Show/hide adjustment controls based on showButtons variable
+            const controls = document.getElementById('adjustmentControls');
+            if (!showButtons) {
+                controls.style.display = 'none';
+            }
+        });
     </script>
 </body>
 </html>
