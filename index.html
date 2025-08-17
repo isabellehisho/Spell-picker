@@ -29,6 +29,13 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .spell-container.error {
+            background: rgba(213, 16, 16, 0.1);
+            border: 2px solid #d51010;
+            box-shadow: 0 0 30px rgba(213, 16, 16, 0.3);
         }
         
         .spell-name {
@@ -39,11 +46,22 @@
             text-shadow: 0 0 10px rgba(16, 213, 194, 0.5);
             text-decoration: none;
             cursor: pointer;
+            transition: all 0.3s ease;
         }
         
         .spell-name:hover {
             color: #0fb3a3;
             text-shadow: 0 0 15px rgba(16, 213, 194, 0.8);
+        }
+        
+        .spell-name.error {
+            color: #d51010;
+            text-shadow: 0 0 10px rgba(213, 16, 16, 0.5);
+        }
+        
+        .spell-name.error:hover {
+            color: #c10e0e;
+            text-shadow: 0 0 15px rgba(213, 16, 16, 0.8);
         }
         
         .spell-description {
@@ -73,14 +91,25 @@
         const showButtons = false; // Set to false to hide buttons
         const adjustmentAmount = 5; // Change this to adjust by different amounts
         const defaultOffset = 10; // Starting vertical offset in pixels
-        const fallbackSpells =  [
+        
+        // Backup spell list
+        const backupSpells = [
             "Fireball",
             "Lightning Bolt",
             "Healing Word",
             "Magic Missile",
             "Shield",
-            "Cure Wounds"
-        ]; // Backup spells if spells.txt is not found
+            "Cure Wounds",
+            "Mage Armor",
+            "Sacred Flame",
+            "Eldritch Blast",
+            "Minor Illusion",
+            "Prestidigitation",
+            "Guidance",
+            "Vicious Mockery",
+            "Toll the Dead",
+            "Word of Radiance"
+        ];
 
         function adjustVertical(amount) {
             verticalOffset += amount;
@@ -91,27 +120,41 @@
 
         async function loadSpells() {
             try {
-                // Check if spells.txt exists by trying to fetch it
-                const response = await fetch('spells.txt');
+                const response = await window.fs.readFile('dnd_spells.csv', { encoding: 'utf8' });
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                // Parse CSV using a simple approach since we just need the spell names
+                const lines = response.split('\n');
+                const header = lines[0];
+                
+                // Extract spell names (first column) from each row
+                spells = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (line) {
+                        // Handle quoted spell names - extract text between first quotes or up to first comma
+                        let spellName;
+                        if (line.startsWith('"')) {
+                            const endQuote = line.indexOf('"', 1);
+                            spellName = line.substring(1, endQuote);
+                        } else {
+                            spellName = line.split(',')[0];
+                        }
+                        
+                        if (spellName && spellName.trim()) {
+                            spells.push(spellName.trim());
+                        }
+                    }
                 }
                 
-                const text = await response.text();
-                const loadedSpells = text.split('\n').filter(spell => spell.trim() !== '');
-                
-                if (loadedSpells.length === 0) {
-                    throw new Error('spells.txt is empty');
-                }
-                
-                spells = loadedSpells;
-                console.log('Successfully loaded spells from spells.txt');
+                console.log(`Loaded ${spells.length} spells from CSV`);
                 displaySpell();
-                
             } catch (error) {
-                console.error('Error loading spells:', error);
-                document.getElementById('spellName').textContent = 'Error loading spells';
+                console.error('Error loading spells from CSV:', error);
+                // Use backup spell list and apply error styling
+                spells = backupSpells;
+                document.querySelector('.spell-container').classList.add('error');
+                document.getElementById('spellName').classList.add('error');
+                displaySpell();
             }
         }
 
