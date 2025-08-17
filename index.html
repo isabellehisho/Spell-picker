@@ -85,6 +85,7 @@
 
     <script>
         let spells = [];
+        let allSpells = []; // Store all spell data for filtering
         let verticalOffset = 0;
         
         // Configuration variables
@@ -111,6 +112,73 @@
             "Word of Radiance"
         ];
 
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            return result;
+        }
+
+        function filterSpells() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const levelFilter = urlParams.get('level');
+            const classFilter = urlParams.get('class');
+            const castingTimeFilter = urlParams.get('casting_time');
+            
+            let filteredSpells = allSpells;
+            
+            // Filter by level
+            if (levelFilter) {
+                filteredSpells = filteredSpells.filter(spell => {
+                    const spellLevel = spell.level.toLowerCase();
+                    const filterLevel = levelFilter.toLowerCase();
+                    
+                    // Handle different level formats
+                    if (filterLevel === '0' || filterLevel === 'cantrip') {
+                        return spellLevel.includes('cantrip');
+                    } else {
+                        return spellLevel.includes(filterLevel);
+                    }
+                });
+            }
+            
+            // Filter by class
+            if (classFilter) {
+                filteredSpells = filteredSpells.filter(spell => {
+                    return spell.classes.toLowerCase().includes(classFilter.toLowerCase());
+                });
+            }
+            
+            // Filter by casting time
+            if (castingTimeFilter) {
+                filteredSpells = filteredSpells.filter(spell => {
+                    return spell.casting_time.toLowerCase().includes(castingTimeFilter.toLowerCase());
+                });
+            }
+            
+            // Extract just the names for the spells array
+            spells = filteredSpells.map(spell => spell.name);
+            
+            console.log(`Filtered to ${spells.length} spells`);
+            if (levelFilter) console.log(`Level filter: ${levelFilter}`);
+            if (classFilter) console.log(`Class filter: ${classFilter}`);
+            if (castingTimeFilter) console.log(`Casting time filter: ${castingTimeFilter}`);
+        }
+
         function adjustVertical(amount) {
             verticalOffset += amount;
             const spellName = document.getElementById('spellName');
@@ -126,35 +194,43 @@
                 }
                 const csvText = await response.text();
                 
-                // Parse CSV using a simple approach since we just need the spell names
+                // Parse CSV properly
                 const lines = csvText.split('\n');
+                const headers = parseCSVLine(lines[0]);
                 
-                // Extract spell names (first column) from each row
-                spells = [];
+                allSpells = [];
+                
                 for (let i = 1; i < lines.length; i++) {
                     const line = lines[i].trim();
                     if (line) {
-                        // Handle quoted spell names - extract text between first quotes or up to first comma
-                        let spellName;
-                        if (line.startsWith('"')) {
-                            const endQuote = line.indexOf('"', 1);
-                            spellName = line.substring(1, endQuote);
-                        } else {
-                            spellName = line.split(',')[0];
-                        }
+                        const values = parseCSVLine(line);
                         
-                        if (spellName && spellName.trim()) {
-                            spells.push(spellName.trim());
+                        if (values.length >= headers.length && values[0]) {
+                            const spell = {};
+                            headers.forEach((header, index) => {
+                                spell[header] = values[index] || '';
+                            });
+                            allSpells.push(spell);
                         }
                     }
                 }
                 
-                console.log(`Loaded ${spells.length} spells from CSV`);
+                console.log(`Loaded ${allSpells.length} spells from CSV`);
+                
+                // Apply filters based on URL parameters
+                filterSpells();
                 displaySpell();
+                
             } catch (error) {
                 console.error('Error loading spells from CSV:', error);
                 // Use backup spell list and apply error styling
-                spells = backupSpells;
+                allSpells = backupSpells.map(name => ({
+                    name: name,
+                    level: '1st',
+                    classes: 'Wizard',
+                    casting_time: '1 action'
+                }));
+                filterSpells();
                 document.querySelector('.spell-container').classList.add('error');
                 document.getElementById('spellName').classList.add('error');
                 displaySpell();
