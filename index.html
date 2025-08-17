@@ -120,11 +120,14 @@
 
         async function loadSpells() {
             try {
-                const response = await window.fs.readFile('dnd_spells.csv', { encoding: 'utf8' });
+                const response = await fetch('dnd_spells.csv');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const csvText = await response.text();
                 
                 // Parse CSV using a simple approach since we just need the spell names
-                const lines = response.split('\n');
-                const header = lines[0];
+                const lines = csvText.split('\n');
                 
                 // Extract spell names (first column) from each row
                 spells = [];
