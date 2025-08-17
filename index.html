@@ -138,6 +138,11 @@
             const levelFilter = urlParams.get('level');
             const classFilter = urlParams.get('class');
             const castingTimeFilter = urlParams.get('casting_time');
+            const durationFilter = urlParams.get('duration');
+            const rangeFilter = urlParams.get('range');
+            const concentrationFilter = urlParams.get('concentration');
+            const schoolFilter = urlParams.get('school');
+            const componentsFilter = urlParams.get('components');
             
             let filteredSpells = allSpells;
             
@@ -170,6 +175,54 @@
                 });
             }
             
+            // Filter by duration
+            if (durationFilter) {
+                filteredSpells = filteredSpells.filter(spell => {
+                    return spell.duration.toLowerCase().includes(durationFilter.toLowerCase());
+                });
+            }
+            
+            // Filter by range
+            if (rangeFilter) {
+                filteredSpells = filteredSpells.filter(spell => {
+                    return spell.range.toLowerCase().includes(rangeFilter.toLowerCase());
+                });
+            }
+            
+            // Filter by concentration
+            if (concentrationFilter) {
+                const needsConcentration = concentrationFilter.toLowerCase() === 'yes' || concentrationFilter.toLowerCase() === 'true';
+                filteredSpells = filteredSpells.filter(spell => {
+                    const hasConcentration = spell.concentration.toLowerCase() === 'yes';
+                    return needsConcentration ? hasConcentration : !hasConcentration;
+                });
+            }
+            
+            // Filter by school
+            if (schoolFilter) {
+                filteredSpells = filteredSpells.filter(spell => {
+                    return spell.school.toLowerCase().includes(schoolFilter.toLowerCase());
+                });
+            }
+            
+            // Filter by components
+            if (componentsFilter) {
+                filteredSpells = filteredSpells.filter(spell => {
+                    const spellComponents = spell.components.toLowerCase();
+                    const filterComponents = componentsFilter.toLowerCase();
+                    
+                    // Support multiple component searches (e.g., "v,s" or "vsm")
+                    if (filterComponents.includes(',')) {
+                        // Split by comma and check all components are present
+                        const requiredComponents = filterComponents.split(',').map(c => c.trim());
+                        return requiredComponents.every(component => spellComponents.includes(component));
+                    } else {
+                        // Single component or component string search
+                        return spellComponents.includes(filterComponents);
+                    }
+                });
+            }
+            
             // Extract just the names for the spells array
             spells = filteredSpells.map(spell => spell.name);
             
@@ -177,6 +230,11 @@
             if (levelFilter) console.log(`Level filter: ${levelFilter}`);
             if (classFilter) console.log(`Class filter: ${classFilter}`);
             if (castingTimeFilter) console.log(`Casting time filter: ${castingTimeFilter}`);
+            if (durationFilter) console.log(`Duration filter: ${durationFilter}`);
+            if (rangeFilter) console.log(`Range filter: ${rangeFilter}`);
+            if (concentrationFilter) console.log(`Concentration filter: ${concentrationFilter}`);
+            if (schoolFilter) console.log(`School filter: ${schoolFilter}`);
+            if (componentsFilter) console.log(`Components filter: ${componentsFilter}`);
         }
 
         function adjustVertical(amount) {
